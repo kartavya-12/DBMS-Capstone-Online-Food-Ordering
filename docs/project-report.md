@@ -251,3 +251,4 @@ The **Online Food Ordering System** successfully demonstrates that advanced rela
 1. **Geospatial Indexing**: Implementing MySQL GIS extensions (`ST_Distance_Sphere`, `Point`) to calculate exact delivery fees and driver dispatch based on GPS coordinates.
 2. **WebSockets / Server-Sent Events (SSE)**: Replacing client polling with real-time push notifications for live delivery tracking.
 3. **Automated Inventory Tracking**: Linking dish availability to ingredient batch inventories with auto-deduction triggers upon order placement.
+

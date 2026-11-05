@@ -55,3 +55,4 @@ This testing specification documents functional, transactional, security, and in
 1. On the delivered order receipt, select 5 stars and submit: *"Sensational flavours, piping hot delivery!"*.
 2. Visit **Spice Symphony** detail page or **Admin Analytics** (`/admin/reports`).
    * *Verify:* Restaurant `rating_avg` and `total_reviews` count have incremented automatically via the MySQL trigger.
+

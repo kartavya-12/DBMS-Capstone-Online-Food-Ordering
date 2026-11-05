@@ -144,3 +144,4 @@ All seeded accounts have the default demonstration password: **`Password123!`**
 * 📚 **[Data Dictionary](file:///c:/code/dbms%20capstone/docs/data-dictionary.md)**: Column specifications, data types, and constraints for all 9 tables.
 * 🌐 **[REST API Documentation](file:///c:/code/dbms%20capstone/docs/api-documentation.md)**: Endpoints, authentication, request payloads, and responses.
 * 📐 **[Architecture & ER Diagram](file:///c:/code/dbms%20capstone/docs/architecture-and-schema.md)**: Phase 1 design blueprint.
+

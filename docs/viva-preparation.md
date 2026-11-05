@@ -128,3 +128,4 @@ In our system:
 pool.execute('SELECT * FROM users WHERE email = ?', [email]);
 ```
 * **Protocol-Level Separation**: In prepared statements, the SQL query structure is sent to the MySQL server first for parsing and compilation. The parameters are transmitted in a separate binary packet. The MySQL query planner treats parameter input strictly as literal values, never as executable SQL code.
+

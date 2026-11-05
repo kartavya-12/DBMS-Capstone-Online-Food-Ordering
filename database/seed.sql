@@ -8,15 +8,15 @@ USE food_ordering_db;
 -- ----------------------------------------------------------------------------
 -- 1. Insert Users (Admin, Restaurant Managers, Customers)
 -- Note: Default demonstration password for all seeded users is "Password123!"
--- BCrypt hash: $2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy
+-- BCrypt hash: $2a$10$5Ot/FtQ..pi.wfM5v4SIh.t05QtcNrxPxt7jE4hyiHe0XFL7Nbmxa
 -- ----------------------------------------------------------------------------
 INSERT INTO users (user_id, name, email, password_hash, phone, role, is_active) VALUES
-(1, 'System Administrator', 'admin@foodexpress.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '+91 98765 00001', 'admin', TRUE),
-(2, 'Chef Rajesh Khanna', 'manager.spice@foodexpress.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '+91 98765 00002', 'restaurant_manager', TRUE),
-(3, 'Marco Rossi', 'manager.pizza@foodexpress.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '+91 98765 00003', 'restaurant_manager', TRUE),
-(4, 'John Doe', 'john.doe@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '+91 98765 11111', 'customer', TRUE),
-(5, 'Priya Sharma', 'priya.sharma@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '+91 98765 22222', 'customer', TRUE),
-(6, 'Alex Kumar', 'alex.kumar@example.com', '$2a$10$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7p92ldGxad68LJZdL17lhWy', '+91 98765 33333', 'customer', TRUE);
+(1, 'System Administrator', 'admin@foodexpress.com', '$2a$10$5Ot/FtQ..pi.wfM5v4SIh.t05QtcNrxPxt7jE4hyiHe0XFL7Nbmxa', '+91 98765 00001', 'admin', TRUE),
+(2, 'Chef Rajesh Khanna', 'manager.spice@foodexpress.com', '$2a$10$5Ot/FtQ..pi.wfM5v4SIh.t05QtcNrxPxt7jE4hyiHe0XFL7Nbmxa', '+91 98765 00002', 'restaurant_manager', TRUE),
+(3, 'Marco Rossi', 'manager.pizza@foodexpress.com', '$2a$10$5Ot/FtQ..pi.wfM5v4SIh.t05QtcNrxPxt7jE4hyiHe0XFL7Nbmxa', '+91 98765 00003', 'restaurant_manager', TRUE),
+(4, 'John Doe', 'john.doe@example.com', '$2a$10$5Ot/FtQ..pi.wfM5v4SIh.t05QtcNrxPxt7jE4hyiHe0XFL7Nbmxa', '+91 98765 11111', 'customer', TRUE),
+(5, 'Priya Sharma', 'priya.sharma@example.com', '$2a$10$5Ot/FtQ..pi.wfM5v4SIh.t05QtcNrxPxt7jE4hyiHe0XFL7Nbmxa', '+91 98765 22222', 'customer', TRUE),
+(6, 'Alex Kumar', 'alex.kumar@example.com', '$2a$10$5Ot/FtQ..pi.wfM5v4SIh.t05QtcNrxPxt7jE4hyiHe0XFL7Nbmxa', '+91 98765 33333', 'customer', TRUE);
 
 -- ----------------------------------------------------------------------------
 -- 2. Insert User Addresses
