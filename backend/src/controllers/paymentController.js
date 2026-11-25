@@ -58,7 +58,11 @@ const createRazorpayOrder = async (req, res, next) => {
         });
     } catch (error) {
         console.error('Razorpay Order Creation Error:', error);
-        next(error);
+        const description = error?.error?.description || error?.message || 'Authentication failed';
+        return res.status(400).json({
+            success: false,
+            message: `Razorpay Error: ${description}. Please check if your Test Key ID and Secret are active in your Razorpay Dashboard.`
+        });
     }
 };
 

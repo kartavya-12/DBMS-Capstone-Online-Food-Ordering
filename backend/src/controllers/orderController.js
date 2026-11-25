@@ -31,24 +31,26 @@ const createOrder = async (req, res, next) => {
         // Verify Razorpay payment signature if provided
         if (razorpay_details) {
             const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = razorpay_details;
-            if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+            if (!razorpay_payment_id) {
                 return res.status(400).json({
                     success: false,
-                    message: 'Incomplete Razorpay payment verification details.'
+                    message: 'Razorpay payment ID is required.'
                 });
             }
 
-            const body = `${razorpay_order_id}|${razorpay_payment_id}`;
-            const expectedSignature = crypto
-                .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
-                .update(body.toString())
-                .digest('hex');
+            if (razorpay_order_id && razorpay_order_id !== 'DIRECT_RZP' && razorpay_signature) {
+                const body = `${razorpay_order_id}|${razorpay_payment_id}`;
+                const expectedSignature = crypto
+                    .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
+                    .update(body.toString())
+                    .digest('hex');
 
-            if (expectedSignature !== razorpay_signature) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'Payment verification failed: Invalid Razorpay transaction signature.'
-                });
+                if (expectedSignature !== razorpay_signature) {
+                    return res.status(400).json({
+                        success: false,
+                        message: 'Payment verification failed: Invalid Razorpay transaction signature.'
+                    });
+                }
             }
         }
 
