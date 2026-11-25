@@ -7,30 +7,44 @@ dotenv.config();
 
 /**
  * Database Auto-Migration & Seed Script
- * Connects to the target MySQL database and applies schema.sql followed by seed.sql
+ * Connects to the target MySQL / TiDB database and applies schema.sql followed by seed.sql
  */
 async function initializeDatabase() {
     console.log('================================================================');
     console.log('  INITIALIZING CLOUD / LOCAL MYSQL DATABASE');
     console.log('================================================================');
 
+    const certPath = path.join(__dirname, '../../certs/ca.pem');
+    const hasCaCert = fs.existsSync(certPath);
+
     const isCloudDb = process.env.DB_SSL === 'true' || 
+                      hasCaCert ||
                       (process.env.DB_HOST && process.env.DB_HOST !== 'localhost' && process.env.DB_HOST !== '127.0.0.1');
 
+    const sslConfig = isCloudDb ? {
+        minVersion: 'TLSv1.2',
+        ca: hasCaCert ? fs.readFileSync(certPath) : (process.env.TIDB_CA_CERT || undefined),
+        rejectUnauthorized: hasCaCert || Boolean(process.env.TIDB_CA_CERT)
+    } : undefined;
+
+    if (hasCaCert) {
+        console.log('[SSL] Found CA Certificate at backend/certs/ca.pem');
+    }
+
     const config = process.env.DATABASE_URL
-        ? { uri: process.env.DATABASE_URL, multipleStatements: true, ssl: isCloudDb ? { rejectUnauthorized: false } : undefined }
+        ? { uri: process.env.DATABASE_URL, multipleStatements: true, ssl: sslConfig }
         : {
             host: process.env.DB_HOST || 'localhost',
             port: parseInt(process.env.DB_PORT || '3306', 10),
             user: process.env.DB_USER || 'root',
             password: process.env.DB_PASSWORD || '',
             multipleStatements: true,
-            ssl: isCloudDb ? { rejectUnauthorized: false } : undefined
+            ssl: sslConfig
         };
 
     const targetDb = process.env.DB_NAME || 'food_ordering_db';
 
-    console.log(`[1/3] Connecting to MySQL at ${process.env.DB_HOST || 'localhost'}...`);
+    console.log(`[1/3] Connecting to database at ${process.env.DB_HOST || 'localhost'}...`);
     const connection = await mysql.createConnection(config);
     console.log('Connected successfully!');
 
@@ -47,17 +61,12 @@ async function initializeDatabase() {
             throw new Error(`Schema or seed file not found. Checked: ${schemaPath}`);
         }
 
-        console.log('[3/3] Applying schema.sql DDL (tables, triggers, views)...');
+        console.log('[3/3] Applying schema.sql DDL (tables, views)...');
         let schemaSql = fs.readFileSync(schemaPath, 'utf8');
         // Remove DROP/CREATE DATABASE in schema.sql if already using targetDb
         schemaSql = schemaSql.replace(/DROP DATABASE IF EXISTS food_ordering_db;/gi, '');
         schemaSql = schemaSql.replace(/CREATE DATABASE food_ordering_db[^;]*;/gi, '');
         schemaSql = schemaSql.replace(/USE food_ordering_db;/gi, '');
-
-        // Remove DELIMITER $$ syntax for node-mysql2
-        schemaSql = schemaSql.replace(/DELIMITER \$\$/g, '');
-        schemaSql = schemaSql.replace(/DELIMITER ;/g, '');
-        schemaSql = schemaSql.replace(/\$\$/g, ';');
 
         await connection.query(schemaSql);
         console.log('Schema applied successfully!');
@@ -67,6 +76,24 @@ async function initializeDatabase() {
         seedSql = seedSql.replace(/USE food_ordering_db;/gi, '');
         await connection.query(seedSql);
         console.log('Demonstration seed data inserted successfully!');
+
+        // Recalculate restaurant ratings because TiDB does not support triggers
+        await connection.query(`
+            UPDATE restaurants r
+            LEFT JOIN (
+                SELECT
+                    restaurant_id,
+                    ROUND(AVG(rating), 2) AS avg_rating,
+                    COUNT(*) AS review_count
+                FROM reviews
+                GROUP BY restaurant_id
+            ) rev ON r.restaurant_id = rev.restaurant_id
+            SET
+                r.rating_avg = COALESCE(rev.avg_rating, 0),
+                r.total_reviews = COALESCE(rev.review_count, 0);
+        `);
+
+        console.log('Restaurant ratings updated successfully!');
 
         console.log('\n================================================================');
         console.log('  DATABASE INITIALIZATION COMPLETE! ALL TABLES & SEED DATA READY');

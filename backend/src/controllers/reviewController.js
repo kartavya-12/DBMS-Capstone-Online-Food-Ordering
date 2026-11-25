@@ -61,11 +61,29 @@ const createReview = async (req, res, next) => {
             });
         }
 
-        // Insert review (database triggers will automatically update restaurant rating_avg and total_reviews!)
+        // Insert review
         const [result] = await pool.execute(
             'INSERT INTO reviews (user_id, restaurant_id, order_id, rating, comment) VALUES (?, ?, ?, ?, ?)',
             [req.user.user_id, order.restaurant_id, order_id, numRating, comment ? comment.trim() : null]
         );
+
+        // Recalculate restaurant ratings application-side for TiDB / cloud compatibility
+        await pool.execute(`
+            UPDATE restaurants r
+            LEFT JOIN (
+                SELECT
+                    restaurant_id,
+                    ROUND(AVG(rating), 2) AS avg_rating,
+                    COUNT(*) AS review_count
+                FROM reviews
+                WHERE restaurant_id = ?
+                GROUP BY restaurant_id
+            ) rev ON r.restaurant_id = rev.restaurant_id
+            SET
+                r.rating_avg = COALESCE(rev.avg_rating, 0.00),
+                r.total_reviews = COALESCE(rev.review_count, 0)
+            WHERE r.restaurant_id = ?
+        `, [order.restaurant_id, order.restaurant_id]);
 
         return res.status(201).json({
             success: true,
@@ -118,12 +136,35 @@ const deleteReview = async (req, res, next) => {
     try {
         const reviewId = req.params.id;
 
+        const [reviewInfo] = await pool.execute('SELECT restaurant_id FROM reviews WHERE review_id = ?', [reviewId]);
+        const restaurantId = reviewInfo.length > 0 ? reviewInfo[0].restaurant_id : null;
+
         const [result] = await pool.execute('DELETE FROM reviews WHERE review_id = ?', [reviewId]);
         if (result.affectedRows === 0) {
             return res.status(404).json({
                 success: false,
                 message: 'Review not found.'
             });
+        }
+
+        // Recalculate restaurant ratings application-side for TiDB / cloud compatibility
+        if (restaurantId) {
+            await pool.execute(`
+                UPDATE restaurants r
+                LEFT JOIN (
+                    SELECT
+                        restaurant_id,
+                        ROUND(AVG(rating), 2) AS avg_rating,
+                        COUNT(*) AS review_count
+                    FROM reviews
+                    WHERE restaurant_id = ?
+                    GROUP BY restaurant_id
+                ) rev ON r.restaurant_id = rev.restaurant_id
+                SET
+                    r.rating_avg = COALESCE(rev.avg_rating, 0.00),
+                    r.total_reviews = COALESCE(rev.review_count, 0)
+                WHERE r.restaurant_id = ?
+            `, [restaurantId, restaurantId]);
         }
 
         return res.json({

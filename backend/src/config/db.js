@@ -1,13 +1,23 @@
+const fs = require('fs');
+const path = require('path');
 const mysql = require('mysql2/promise');
 const dotenv = require('dotenv');
 
 dotenv.config();
 
-// Determine SSL options for cloud-hosted databases (e.g. Aiven, TiDB Cloud, Railway)
+// SSL Configuration for Cloud Databases (TiDB Cloud, Aiven, etc.)
+const certPath = path.join(__dirname, '../../certs/ca.pem');
+const hasCaCert = fs.existsSync(certPath);
+
 const isCloudDb = process.env.DB_SSL === 'true' || 
+                  hasCaCert ||
                   (process.env.DB_HOST && process.env.DB_HOST !== 'localhost' && process.env.DB_HOST !== '127.0.0.1');
 
-const sslConfig = isCloudDb ? { rejectUnauthorized: false } : undefined;
+const sslConfig = isCloudDb ? {
+    minVersion: 'TLSv1.2',
+    ca: hasCaCert ? fs.readFileSync(certPath) : (process.env.TIDB_CA_CERT || undefined),
+    rejectUnauthorized: hasCaCert || Boolean(process.env.TIDB_CA_CERT)
+} : undefined;
 
 let pool;
 
@@ -47,6 +57,9 @@ const testConnection = async () => {
         const port = process.env.DB_PORT || 3306;
         const db = process.env.DB_NAME || 'food_ordering_db';
         console.log(`[Database] Successfully connected to MySQL at ${host}:${port}/${db}`);
+        if (hasCaCert) {
+            console.log('[Database] Verified TLS connection using backend/certs/ca.pem');
+        }
         connection.release();
         return true;
     } catch (error) {
