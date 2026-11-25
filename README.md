@@ -1,7 +1,13 @@
 # FoodExpress — Online Food Ordering System
 ### B.Tech Computer Science & Engineering — DBMS Capstone Project
 
-A complete, production-grade, relational database-driven web application demonstrating core Database Management System (DBMS) concepts: **3NF Normalization**, **ACID Transactions**, **Historical Price Immutability**, **Database Triggers**, **Operational Views**, **Composite Indexing**, and **Role-Based Access Control (RBAC)**.
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-46E3B7?style=for-the-badge&logo=render&logoColor=white)](https://dbms-capstone-online-food-ordering.onrender.com/)
+[![Database](https://img.shields.io/badge/Database-TiDB%20Cloud%20MySQL-orange?style=for-the-badge&logo=mysql&logoColor=white)](https://tidbcloud.com/)
+[![Payment Gateway](https://img.shields.io/badge/Payments-Razorpay-blue?style=for-the-badge&logo=razorpay&logoColor=white)](https://razorpay.com/)
+
+🌐 **Live Application URL:** [https://dbms-capstone-online-food-ordering.onrender.com/](https://dbms-capstone-online-food-ordering.onrender.com/)
+
+A complete, production-grade, relational database-driven web application demonstrating core Database Management System (DBMS) concepts: **3NF Normalization**, **ACID Transactions**, **Historical Price Immutability**, **Database Triggers & Synchronization**, **Operational Views**, **Composite Indexing**, and **Role-Based Access Control (RBAC)**.
 
 ---
 
