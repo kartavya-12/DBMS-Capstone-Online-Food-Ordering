@@ -14,37 +14,62 @@ async function initializeDatabase() {
     console.log('  INITIALIZING CLOUD / LOCAL MYSQL DATABASE');
     console.log('================================================================');
 
-    const certPath = path.join(__dirname, '../../certs/ca.pem');
-    const hasCaCert = fs.existsSync(certPath);
-
     const isCloudDb = process.env.DB_SSL === 'true' || 
-                      hasCaCert ||
                       (process.env.DB_HOST && process.env.DB_HOST !== 'localhost' && process.env.DB_HOST !== '127.0.0.1');
 
-    const sslConfig = isCloudDb ? {
-        minVersion: 'TLSv1.2',
-        ca: hasCaCert ? fs.readFileSync(certPath) : (process.env.TIDB_CA_CERT || undefined),
-        rejectUnauthorized: hasCaCert || Boolean(process.env.TIDB_CA_CERT)
-    } : undefined;
+    const resolveCaPath = () => {
+        const specified = process.env.DB_SSL_CA || 'certs/ca.pem';
+        const directPath = path.resolve(process.cwd(), specified);
+        if (fs.existsSync(directPath)) return directPath;
+        const backendPath = path.resolve(process.cwd(), 'backend', specified);
+        if (fs.existsSync(backendPath)) return backendPath;
+        const parentPath = path.resolve(__dirname, '../../certs/ca.pem');
+        if (fs.existsSync(parentPath)) return parentPath;
+        return directPath;
+    };
 
-    if (hasCaCert) {
-        console.log('[SSL] Found CA Certificate at backend/certs/ca.pem');
+    const sslConfig = isCloudDb
+        ? {
+            minVersion: 'TLSv1.2',
+            ca: fs.readFileSync(resolveCaPath()),
+            rejectUnauthorized: true
+        }
+        : undefined;
+
+    if (isCloudDb) {
+        console.log(`[SSL] Using CA Certificate from ${resolveCaPath()}`);
     }
 
     const config = process.env.DATABASE_URL
-        ? { uri: process.env.DATABASE_URL, multipleStatements: true, ssl: sslConfig }
+        ? {
+            uri: process.env.DATABASE_URL,
+            multipleStatements: true,
+            ssl: isCloudDb
+                ? {
+                    minVersion: 'TLSv1.2',
+                    ca: fs.readFileSync(resolveCaPath()),
+                    rejectUnauthorized: true
+                }
+                : undefined
+        }
         : {
             host: process.env.DB_HOST || 'localhost',
             port: parseInt(process.env.DB_PORT || '3306', 10),
             user: process.env.DB_USER || 'root',
             password: process.env.DB_PASSWORD || '',
             multipleStatements: true,
-            ssl: sslConfig
+            ssl: isCloudDb
+                ? {
+                    minVersion: 'TLSv1.2',
+                    ca: fs.readFileSync(resolveCaPath()),
+                    rejectUnauthorized: true
+                }
+                : undefined
         };
 
     const targetDb = process.env.DB_NAME || 'food_ordering_db';
 
-    console.log(`[1/3] Connecting to database at ${process.env.DB_HOST || 'localhost'}...`);
+    console.log(`[1/3] Connecting to database at ${process.env.DB_HOST || 'localhost'}:${process.env.DB_PORT || 3306}...`);
     const connection = await mysql.createConnection(config);
     console.log('Connected successfully!');
 

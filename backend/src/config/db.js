@@ -5,19 +5,29 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-// SSL Configuration for Cloud Databases (TiDB Cloud, Aiven, etc.)
-const certPath = path.join(__dirname, '../../certs/ca.pem');
-const hasCaCert = fs.existsSync(certPath);
-
+// Determine SSL options for cloud-hosted databases (e.g. TiDB Cloud, Aiven)
 const isCloudDb = process.env.DB_SSL === 'true' || 
-                  hasCaCert ||
                   (process.env.DB_HOST && process.env.DB_HOST !== 'localhost' && process.env.DB_HOST !== '127.0.0.1');
 
-const sslConfig = isCloudDb ? {
-    minVersion: 'TLSv1.2',
-    ca: hasCaCert ? fs.readFileSync(certPath) : (process.env.TIDB_CA_CERT || undefined),
-    rejectUnauthorized: hasCaCert || Boolean(process.env.TIDB_CA_CERT)
-} : undefined;
+// Resolve CA certificate path safely whether running from backend/ or project root
+const resolveCaPath = () => {
+    const specified = process.env.DB_SSL_CA || 'certs/ca.pem';
+    const directPath = path.resolve(process.cwd(), specified);
+    if (fs.existsSync(directPath)) return directPath;
+    const backendPath = path.resolve(process.cwd(), 'backend', specified);
+    if (fs.existsSync(backendPath)) return backendPath;
+    const parentPath = path.resolve(__dirname, '../../certs/ca.pem');
+    if (fs.existsSync(parentPath)) return parentPath;
+    return directPath;
+};
+
+const sslConfig = isCloudDb
+    ? {
+        minVersion: 'TLSv1.2',
+        ca: fs.readFileSync(resolveCaPath()),
+        rejectUnauthorized: true
+    }
+    : undefined;
 
 let pool;
 
@@ -56,15 +66,12 @@ const testConnection = async () => {
         const host = process.env.DB_HOST || 'localhost';
         const port = process.env.DB_PORT || 3306;
         const db = process.env.DB_NAME || 'food_ordering_db';
-        console.log(`[Database] Successfully connected to MySQL at ${host}:${port}/${db}`);
-        if (hasCaCert) {
-            console.log('[Database] Verified TLS connection using backend/certs/ca.pem');
-        }
+        console.log(`[Database] Successfully connected to MySQL / TiDB at ${host}:${port}/${db}`);
         connection.release();
         return true;
     } catch (error) {
         console.error('[Database] Connection Failed:', error.message);
-        console.error('[Database] Tip: Ensure MySQL server is running and credentials in environment variables are correct.');
+        console.error('[Database] Tip: Ensure TiDB Cloud is accessible and credentials in backend/.env are correct.');
         return false;
     }
 };
