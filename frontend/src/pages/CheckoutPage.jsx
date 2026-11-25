@@ -95,7 +95,7 @@ const CheckoutPage = () => {
 
       // Step 1: Create an order on the backend via Razorpay Orders API
       let rzpOrder = null;
-      let keyId = 'rzp_test_U4S50qnjXYJ7E4';
+      let keyId = 'rzp_live_U4Sl9wfXl3SdkS';
 
       try {
         const orderRes = await api.post('/payments/razorpay/order', {
