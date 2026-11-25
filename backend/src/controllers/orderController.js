@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { pool } = require('../config/db');
 
 // Allowed status lifecycle transitions
@@ -23,8 +24,33 @@ const createOrder = async (req, res, next) => {
             delivery_address_id,
             items, // Array of { item_id, quantity, notes }
             payment_method,
-            special_instructions
+            special_instructions,
+            razorpay_details // Optional { razorpay_order_id, razorpay_payment_id, razorpay_signature }
         } = req.body;
+
+        // Verify Razorpay payment signature if provided
+        if (razorpay_details) {
+            const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = razorpay_details;
+            if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Incomplete Razorpay payment verification details.'
+                });
+            }
+
+            const body = `${razorpay_order_id}|${razorpay_payment_id}`;
+            const expectedSignature = crypto
+                .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || '')
+                .update(body.toString())
+                .digest('hex');
+
+            if (expectedSignature !== razorpay_signature) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Payment verification failed: Invalid Razorpay transaction signature.'
+                });
+            }
+        }
 
         // 1. Basic payload validations
         if (!restaurant_id || !delivery_address_id || !items || !Array.isArray(items) || items.length === 0) {
@@ -188,8 +214,12 @@ const createOrder = async (req, res, next) => {
         }
 
         // 5.3 Insert Payment Record
-        const txnRef = `TXN_${Date.now()}_${newOrderId}`;
+        const isRazorpay = Boolean(razorpay_details && razorpay_details.razorpay_payment_id);
+        const txnRef = isRazorpay ? razorpay_details.razorpay_payment_id : `TXN_${Date.now()}_${newOrderId}`;
         const paymentStatus = selectedMethod === 'CASH_ON_DELIVERY' ? 'PENDING' : 'COMPLETED';
+        const paymentNotes = isRazorpay
+            ? `Paid via Razorpay Gateway (Order: ${razorpay_details.razorpay_order_id}, Payment ID: ${razorpay_details.razorpay_payment_id})`
+            : (selectedMethod === 'CASH_ON_DELIVERY' ? 'To be collected in cash upon delivery' : 'Payment confirmed via simulated gateway');
 
         await connection.execute(
             `INSERT INTO payments 
@@ -201,7 +231,7 @@ const createOrder = async (req, res, next) => {
                 selectedMethod,
                 paymentStatus,
                 totalAmount,
-                selectedMethod === 'CASH_ON_DELIVERY' ? 'To be collected in cash upon delivery' : 'Payment confirmed via simulated gateway'
+                paymentNotes
             ]
         );
 
