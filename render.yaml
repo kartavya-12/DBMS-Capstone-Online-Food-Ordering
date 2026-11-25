@@ -1,0 +1,34 @@
+# Render Blueprint Specification
+# https://render.com/docs/blueprint-spec
+
+services:
+  # Option 1: Unified Full-Stack Service (Frontend + Backend served from 1 single Free Render instance)
+  - type: web
+    name: foodexpress-fullstack
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: npm run build
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DB_HOST
+        sync: false
+      - key: DB_PORT
+        value: "3306"
+      - key: DB_USER
+        sync: false
+      - key: DB_PASSWORD
+        sync: false
+      - key: DB_NAME
+        value: food_ordering_db
+      - key: DB_SSL
+        value: "true"
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CLIENT_URL
+        value: "*"
